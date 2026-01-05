@@ -1,0 +1,31 @@
+{
+    "cortex-debug.armToolchainPath": "C:/ST/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin",
+    "cortex-debug.gdbPath": "C:/ST/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/arm-none-eabi-gdb.exe",
+    "cortex-debug.stlinkPath": "C:/ST/STM32CubeCLT_1.20.0/STLink-gdb-server/bin",
+    "C_Cpp.default.compilerPath": "C:/ST/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/arm-none-eabi-gcc.exe",
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/**",
+        "${workspaceFolder}/hal/third_party/cmsis_core/Include",
+        "${workspaceFolder}/hal/third_party/cmsis_device_g4/Include",
+        "${workspaceFolder}/hal/third_party/stm32g4xx_hal_driver/Inc",
+        "${workspaceFolder}/hal/platforms/stm32",
+        "${workspaceFolder}/config",
+        "${workspaceFolder}/os/freertos/FreeRTOS-Kernel/include"
+    ],
+    "C_Cpp.default.defines": [
+        "STM32G474xx",
+        "USE_HAL_DRIVER",
+        "STM32_PLATFORM=1"
+    ],
+    "C_Cpp.default.cStandard": "c11",
+    "C_Cpp.default.cppStandard": "c++17",
+    "C_Cpp.default.intelliSenseMode": "gcc-arm",
+    "python.defaultInterpreterPath": "python",
+    "files.associations": {
+        "*.h": "c",
+        "*.c": "c"
+    },
+    "files.exclude": {
+        "**/.git": true
+    }
+}

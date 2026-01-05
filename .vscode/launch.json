@@ -1,0 +1,53 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Blinky (ST-Link)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/builds/build_blinky/executables/blinky.elf",
+            "servertype": "stlink",
+            "serverpath": "C:/ST/STM32CubeCLT_1.20.0/STLink-gdb-server/bin/ST-LINK_gdbserver.exe",
+            "stm32cubeprogrammer": "C:/ST/STM32CubeCLT_1.20.0/STM32CubeProgrammer/bin",
+            "device": "STM32G474RE",
+            "interface": "swd",
+            "serialNumber": "",
+            "runToEntryPoint": "main",
+            "svdFile": "C:/ST/STM32CubeCLT_1.20.0/STMicroelectronics_CMSIS_SVD/STM32G474.svd",
+            "preLaunchTask": "Build Blinky",
+            "showDevDebugOutput": "both",
+        },
+        {
+            "name": "Debug Firmware (ST-Link)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/builds/build_firmware/executables/firmware.elf",
+            "servertype": "stlink",
+            "serverpath": "C:/ST/STM32CubeCLT_1.20.0/STLink-gdb-server/bin/ST-LINK_gdbserver.exe",
+            "stm32cubeprogrammer": "C:/ST/STM32CubeCLT_1.20.0/STM32CubeProgrammer/bin",
+            "device": "STM32G474RE",
+            "interface": "swd",
+            "serialNumber": "",
+            "runToEntryPoint": "main",
+            "svdFile": "C:/ST/STM32CubeCLT_1.20.0/STMicroelectronics_CMSIS_SVD/STM32G474.svd",
+            "preLaunchTask": "Build Firmware",
+            "showDevDebugOutput": "none",
+        },
+        {
+            "name": "Attach to Target (ST-Link)",
+            "type": "cortex-debug",
+            "request": "attach",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/builds/build_blinky/executables/blinky.elf",
+            "servertype": "stlink",
+            "serverpath": "C:/ST/STM32CubeCLT_1.20.0/STLink-gdb-server/bin/ST-LINK_gdbserver.exe",
+            "stm32cubeprogrammer": "C:/ST/STM32CubeCLT_1.20.0/STM32CubeProgrammer/bin",
+            "device": "STM32G474RE",
+            "interface": "swd",
+            "svdFile": "C:/ST/STM32CubeCLT_1.20.0/STMicroelectronics_CMSIS_SVD/STM32G474.svd",
+            "showDevDebugOutput": "none"
+        }
+    ]
+}

@@ -1,0 +1,9 @@
+D:/AS/WorkSpace/MultiAxesControl/builds/build_blinky/CMakeFiles/freertos_kernel.dir
+D:/AS/WorkSpace/MultiAxesControl/builds/build_blinky/CMakeFiles/multi_axes_control.dir
+D:/AS/WorkSpace/MultiAxesControl/builds/build_blinky/CMakeFiles/blinky.dir
+D:/AS/WorkSpace/MultiAxesControl/builds/build_blinky/CMakeFiles/edit_cache.dir
+D:/AS/WorkSpace/MultiAxesControl/builds/build_blinky/CMakeFiles/rebuild_cache.dir
+D:/AS/WorkSpace/MultiAxesControl/builds/build_blinky/CMakeFiles/list_install_components.dir
+D:/AS/WorkSpace/MultiAxesControl/builds/build_blinky/CMakeFiles/install.dir
+D:/AS/WorkSpace/MultiAxesControl/builds/build_blinky/CMakeFiles/install/local.dir
+D:/AS/WorkSpace/MultiAxesControl/builds/build_blinky/CMakeFiles/install/strip.dir
