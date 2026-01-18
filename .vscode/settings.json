@@ -27,5 +27,6 @@
     },
     "files.exclude": {
         "**/.git": true
-    }
+    },
+    "git.ignoreSubmodules": true,
 }

@@ -54,5 +54,6 @@ dkms.conf
 # debug information files
 *.dwo
 
-# Build output (keep directory structure, ignore contents)
-builds/*/
+# Build output
+build/
+builds/
