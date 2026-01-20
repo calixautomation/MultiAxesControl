@@ -1,285 +1,379 @@
 # MultiAxesControl
 
-A modular, layered motor control system designed for automated roughness measurement of curved surfaces. This project implements a platform-agnostic architecture with FreeRTOS support and CMake build system.
+A modular multi-axis motor control system, designed for precise control of stepper motors movement for industrial applications
 
 ## Features
 
-- **Modular Architecture**: Layered design with clear separation of concerns
-- **Platform Agnostic**: Generic register configuration system supporting multiple platforms
-- **HAL (Hardware Abstraction Layer)**: Platform-specific implementations for Arduino, STM32, and ESP32
-- **FreeRTOS Integration**: Real-time operating system support with task management
-- **CMake Build System**: Cross-platform build configuration
-- **Python GUI**: User-friendly interface for motor control
-- **Generic Register Mapping**: Platform-independent hardware access
+- **Dual-Axis Control**: Linear and rotary stepper motor control and scalable
+- **Multiple Operating Modes**: Jog, incremental, cyclic movement
+- **FreeRTOS Integration**: Real-time task management
+- **Modular Architecture**: Clean separation between HAL, OS, and application layers
+- **VS Code Debugging**: Full Cortex-Debug integration with peripheral viewing
+
+## Hardware
+
+| Component | Specification |
+|-----------|---------------|
+| MCU | STM32G474RE @ 170MHz |
+| Board | NUCLEO-G474RE |
+| Flash/RAM | 512KB / 128KB |
+| Motor 1 (Linear) | TIM2, PA0=STEP, PA1=DIR, 1600 microsteps, max 200Hz |
+| Motor 2 (Rotary) | TIM3, PA2=STEP, PA3=DIR, 6400 microsteps, max 36Hz |
+| UART | USART2 @ 9600 baud, 8E1 |
+| Status LED | PA5 (LD2) |
+| Watchdog | IWDG, 2s timeout |
 
 ## Project Structure
 
 ```
 MultiAxesControl/
-├── src/
-│   ├── application/          # Application layer
-│   │   ├── motor_control.h
-│   │   └── motor_control.c
-│   ├── config/               # Configuration system
-│   │   └── register_config.h
-│   ├── hal/                  # Hardware Abstraction Layer
-│   │   ├── hal_interface.h
-│   │   └── platforms/
-│   │       ├── arduino/
-│   │       │   ├── hal_arduino.h
-│   │       │   ├── hal_arduino.c
-│   │       │   └── CMakeLists.txt
-│   │       ├── stm32/
-│   │       └── esp32/
-│   ├── os/                   # Operating System layer
-│   │   └── freertos/
-│   │       ├── rtos_interface.h
-│   │       ├── rtos_freertos.h
-│   │       └── rtos_freertos.c
-│   └── middleware/           # Middleware layer
-├── gui_app/                  # Python GUI application
-│   └── motor_control_gui.py
-├── examples/                 # Example applications
-│   └── main.c
-├── docs/                     # Documentation
-├── tests/                    # Unit tests
-├── build/                    # Build output directory
-├── CMakeLists.txt           # Main CMake configuration
-└── README.md
+├── firmware/              # Main FreeRTOS application
+│   └── src/main.c
+├── examples/blinky/       # Simple LED blink example
+├── application/           # Motor control business logic
+│   ├── motor_control.h
+│   └── motor_control.c
+├── hal/                   # Hardware Abstraction Layer
+│   ├── hal_interface.h
+│   └── platforms/stm32/
+├── os/                    # FreeRTOS task management
+│   ├── task_manager.h
+│   └── task_manager.c
+├── config/                # FreeRTOS configuration
+├── scripts/build/         # Python build scripts
+└── .vscode/               # VS Code debug configuration
 ```
 
-## Architecture Overview
+## Quick Start
 
-### Layer 1: Hardware Abstraction Layer (HAL)
-- **Purpose**: Platform-specific hardware access
-- **Platforms**: Arduino, STM32, ESP32
-- **Features**: Generic register mapping, interrupt handling, peripheral control
+### Prerequisites
 
-### Layer 2: Operating System (OS)
-- **Purpose**: Real-time task management
-- **RTOS**: FreeRTOS
-- **Features**: Task management, queues, semaphores, timers
+1. **STM32CubeCLT** (Command Line Tools) - [Download](https://www.st.com/en/development-tools/stm32cubeclt.html)
+   - Includes ARM GCC Toolchain, ST-LINK GDB Server, STM32CubeProgrammer CLI, and SVD files
 
-### Layer 3: Application Layer
-- **Purpose**: Motor control logic and command processing
-- **Features**: Command parsing, motor control modes, system configuration
+2. **Set environment variable** `STM32CLT_PATH` pointing to your installation:
 
-### Layer 4: User Interface
-- **Purpose**: Human-machine interface
-- **Implementation**: Python GUI with Tkinter
-- **Features**: Real-time control, status monitoring, command interface
-
-## Hardware Requirements
-
-### Arduino Platform
-- Arduino Uno or compatible
-- Stepper motor drivers (TB6600)
-- Linear and rotary stages
-- Serial communication interface
-
-### STM32 Platform
-- STM32F4 series microcontroller
-- Stepper motor drivers
-- UART interface
-
-### ESP32 Platform
-- ESP32 development board
-- Stepper motor drivers
-- WiFi/Bluetooth communication (optional)
-
-## Software Requirements
-
-### Build System
-- CMake 3.16 or later
-- Platform-specific toolchains:
-  - Arduino: Arduino IDE or PlatformIO
-  - STM32: ARM GCC toolchain
-  - ESP32: ESP-IDF
-
-### Python GUI
-- Python 3.7 or later
-- Required packages:
-  - tkinter (usually included with Python)
-  - pyserial
-  - json (built-in)
-
-## Building the Project
-
-### Using CMake
-
-1. **Create build directory**:
-   ```bash
-   mkdir build
-   cd build
+   **Windows** (run in PowerShell as Admin):
+   ```powershell
+   [Environment]::SetEnvironmentVariable("STM32CLT_PATH", "C:\ST\STM32CubeCLT_1.20.0", "User")
    ```
 
-2. **Configure for target platform**:
+   **Linux/macOS** (add to `~/.bashrc` or `~/.zshrc`):
    ```bash
-   # For Arduino
-   cmake .. -DPLATFORM=arduino
-   
-   # For STM32
-   cmake .. -DPLATFORM=stm32
-   
-   # For ESP32
-   cmake .. -DPLATFORM=esp32
+   export STM32CLT_PATH="/opt/st/stm32cubeclt_1.20.0"
    ```
 
-3. **Build the project**:
-   ```bash
-   cmake --build .
-   ```
+   Restart VS Code after setting the variable.
 
-### Platform-Specific Builds
+3. **CMake 3.16+** - [Download](https://cmake.org/download/)
 
-#### Arduino
+4. **Ninja build system** - [Download](https://ninja-build.org/) or `pip install ninja`
+
+5. **Python 3.7+**
+
+6. **VS Code Extensions**:
+   - **Cortex-Debug** (by marus25) - Required for debugging
+   - **C/C++** (by Microsoft) - Recommended for IntelliSense
+
+### Build
+
 ```bash
-# Using PlatformIO
-pio run -e arduino_uno
+# Build main firmware
+python scripts/build/build_firmware.py
 
-# Using Arduino IDE
-# Import the project and compile
+# Build blinky example
+mkdir -p builds/build_blinky && cd builds/build_blinky
+cmake ../.. -G Ninja -DFWTYPE=blinky
+ninja blinky
+
+# Clean build
+python scripts/build/build_firmware.py --clean
 ```
 
-#### STM32
-```bash
-# Using STM32CubeIDE
-# Import project and build
+Output files are generated in `builds/build_firmware/executables/`:
+- `firmware.elf` - Debug executable
+- `firmware.bin` - Raw binary
+- `firmware.hex` - Intel HEX format
 
-# Using command line
-arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -o firmware.elf src/*.c
+---
+
+## Flashing
+
+### Method 1: Drag & Drop (Easiest)
+
+1. Connect NUCLEO board via USB
+2. Board appears as a USB drive
+3. Drag `builds/build_firmware/executables/firmware.bin` to the drive
+4. Wait for LED to stop blinking (programming complete)
+5. Press black RESET button
+
+### Method 2: STM32CubeProgrammer CLI (via STM32CubeCLT)
+
+If you installed STM32CubeCLT and set `STM32CLT_PATH`, use:
+
+```bash
+# Windows (PowerShell)
+& "$env:STM32CLT_PATH/STM32CubeProgrammer/bin/STM32_Programmer_CLI.exe" `
+  -c port=SWD -w builds/build_firmware/executables/firmware.hex -v -rst
+
+### Method 3: STM32CubeProgrammer GUI
+
+1. Open STM32CubeProgrammer (installed with STM32CubeCLT or standalone)
+2. Connect board via USB
+3. Select **ST-LINK** connection, click **Connect**
+4. Click **Open file** → select `firmware.hex`
+5. Click **Download**
+
+---
+
+## Debugging
+
+### Prerequisites
+
+Debugging requires **STM32CubeCLT** and the `STM32CLT_PATH` environment variable (see Prerequisites above).
+
+The `.vscode` files use `${env:STM32CLT_PATH}` to locate:
+- `GNU-tools-for-STM32/bin/` - ARM GCC toolchain and GDB
+- `STLink-gdb-server/bin/` - ST-LINK GDB server
+- `STM32CubeProgrammer/bin/` - Flash programmer
+- `STMicroelectronics_CMSIS_SVD/` - SVD files for peripheral viewing
+
+### Setup
+
+1. Install **Cortex-Debug** extension in VS Code (Ctrl+Shift+X → search "Cortex-Debug")
+2. Ensure STM32CubeCLT is installed at the expected path
+3. Connect NUCLEO board via USB
+
+### Start Debugging
+
+1. Press **F5** in VS Code
+2. Select **"Debug Firmware (ST-Link)"** or **"Debug Blinky (ST-Link)"**
+3. Debugger automatically builds, flashes, and stops at `main()`
+
+### Debug Configurations
+
+| Configuration | Description |
+|---------------|-------------|
+| Debug Firmware (ST-Link) | Full FreeRTOS firmware with thread awareness |
+| Debug Blinky (ST-Link) | Simple LED blink example |
+| Attach to Target | Attach without reset |
+
+### Keyboard Shortcuts
+
+| Action | Shortcut |
+|--------|----------|
+| Start/Continue | F5 |
+| Toggle Breakpoint | F9 |
+| Step Over | F10 |
+| Step Into | F11 |
+| Step Out | Shift+F11 |
+| Stop | Shift+F5 |
+
+### Features
+
+- **Breakpoints**: Click left of line number
+- **Variable Watch**: Debug sidebar → Watch → Add expression
+- **Peripheral Registers**: Cortex Peripherals view (requires SVD)
+- **FreeRTOS Threads**: View all tasks, states, and stack usage
+- **Memory View**: Debug sidebar → Add Memory → Enter address
+- **SWO Printf**: Add ITM_SendChar implementation for printf debugging
+
+### SWO Printf Setup
+
+Add to your code for printf via debug probe:
+
+```c
+#include <stdio.h>
+
+int _write(int file, char *ptr, int len) {
+    for (int i = 0; i < len; i++) {
+        ITM_SendChar(*ptr++);
+    }
+    return len;
+}
+
+// Now printf() outputs to SWO console
+printf("Debug: value = %d\n", my_variable);
 ```
 
-#### ESP32
-```bash
-# Using ESP-IDF
-idf.py build
+---
 
-# Using PlatformIO
-pio run -e esp32dev
+## Motor Commands
+
+Commands are sent via UART (9600 baud, 8E1) and must end with `Z`.
+
+### Movement Commands
+
+| Command | Description |
+|---------|-------------|
+| `C1Z` | Motor 1 jog forward |
+| `D1Z` | Motor 1 jog reverse |
+| `C2Z` | Motor 2 jog clockwise |
+| `D2Z` | Motor 2 jog counter-clockwise |
+| `S1Z` | Stop Motor 1 |
+| `S2Z` | Stop Motor 2 |
+| `F1Z` / `F2Z` | Single step forward |
+| `G1Z` / `G2Z` | Single step reverse |
+| `E2:<arc>:<cycles>Z` | Cyclic mode (e.g., `E2:30:10Z` = 30mm arc, 10 cycles) |
+| `RZ` | System reset |
+
+### Example Session
+
+```
+> C1Z          # Start Motor 1 forward
+> S1Z          # Stop Motor 1
+> E2:30:5Z     # Motor 2 oscillate 30mm arc, 5 cycles
+> RZ           # Reset system
 ```
 
-## Running the Application
+---
 
-### Python GUI
-```bash
-cd gui_app
-python motor_control_gui.py
+## Architecture
+
+### Layer Overview
+
+```
+┌─────────────────────────────────────────┐
+│           main.c (Firmware)             │
+│  System init, clock config, peripherals │
+└─────────────┬───────────────────────────┘
+              │
+   ┌──────────┼──────────┬────────────┐
+   │          │          │            │
+   ▼          ▼          ▼            ▼
+┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
+│  App   │ │   OS   │ │  HAL   │ │ Config │
+│ Layer  │ │ Layer  │ │ Layer  │ │ Layer  │
+└────────┘ └────────┘ └────────┘ └────────┘
 ```
 
-### Command Line Interface
-```bash
-# Build and run the example
-cd build
-./multi_axes_control_test
+**Application Layer** (`application/`): Pure business logic - command parsing, motor control state machine
+
+**OS Layer** (`os/`): FreeRTOS tasks, queues, ISR handling
+
+**HAL Layer** (`hal/`): Hardware abstraction - GPIO, timers, UART, watchdog
+
+### FreeRTOS Tasks
+
+| Task | Priority | Stack | Purpose |
+|------|----------|-------|---------|
+| UART Handler | 2 | 256 words | Process commands from queue |
+| Motor Update | 1 | 256 words | Execute motor operations |
+| Watchdog | 3 | 128 words | Refresh IWDG every 500ms |
+| Status LED | 1 | 128 words | Blink PA5 LED |
+
+### Command Flow
+
+```
+UART RX (ISR)
+    └─> task_manager_uart_rx_isr()
+        └─> xQueueSend(command_queue)
+            └─> task_uart_handler()
+                └─> motor_control_parse_command()
+                └─> motor_control_process_command()
+                    └─> hal_motor_start()
 ```
 
-## Motor Control Commands
-
-### Basic Commands
-- `C1Z` - Move Linear motor forward (jog)
-- `D1Z` - Move Linear motor reverse (jog)
-- `S1Z` - Stop Linear motor
-- `F1Z` - Step Linear motor forward (incremental)
-- `G1Z` - Step Linear motor reverse (incremental)
-
-### Rotary Motor Commands
-- `C2Z` - Move Rotary motor clockwise (jog)
-- `D2Z` - Move Rotary motor counter-clockwise (jog)
-- `S2Z` - Stop Rotary motor
-- `F2Z` - Step Rotary motor clockwise (incremental)
-- `G2Z` - Step Rotary motor counter-clockwise (incremental)
-- `E2:length:cycles:Z` - Cyclic mode (length in mm, cycles 1-100)
-
-### System Commands
-- `RZ` - Reset system
+---
 
 ## Configuration
 
-### System Configuration
-The system can be configured through the `system_config_t` structure:
+### FreeRTOS (`config/FreeRTOSConfig.h`)
+
+| Setting | Value |
+|---------|-------|
+| `configTICK_RATE_HZ` | 1000 (1ms tick) |
+| `configMINIMAL_STACK_SIZE` | 128 words |
+| `configTOTAL_HEAP_SIZE` | 15KB |
+
+### Motor Settings (`application/motor_control.h`)
 
 ```c
-typedef struct {
-    uint32_t max_frequency_linear;    // Max frequency for linear motor
-    uint32_t max_frequency_rotary;    // Max frequency for rotary motor
-    uint32_t microsteps_linear;       // Microsteps per mm for linear
-    uint32_t microsteps_rotary;       // Microsteps per revolution for rotary
-    float disc_radius;                // Disc radius for rotary calculations
-    float circumference;              // Calculated circumference
-    uint32_t cyclic_delay_ms;         // Delay between cyclic movements
-} system_config_t;
+#define LINEAR_MAX_FREQ     200     // Hz
+#define LINEAR_MICROSTEPS   1600    // steps/mm
+#define ROTARY_MAX_FREQ     36      // Hz
+#define ROTARY_MICROSTEPS   6400    // steps/rev
+#define DISC_RADIUS         15.0    // mm
 ```
 
-### Register Configuration
-Platform-specific register mappings are defined in `register_config.h`:
+---
 
-```c
-typedef struct {
-    volatile uint32_t *base_addr;    // Base address of peripheral
-    uint32_t offset;                 // Register offset
-    uint32_t mask;                   // Bit mask
-    uint32_t shift;                  // Bit shift
-} register_config_t;
+## Troubleshooting
+
+### Build Issues
+
+```bash
+# Clean and rebuild
+python scripts/build/build_firmware.py --clean
 ```
+
+### ST-LINK Not Found
+
+1. Check USB cable (use data cable, not charge-only)
+2. Install ST-LINK drivers (included with STM32CubeIDE)
+3. Update ST-LINK firmware via STM32CubeProgrammer
+4. Check Device Manager for "STMicroelectronics STLink"
+
+### Motor Not Moving
+
+1. Verify UART settings: 9600 baud, 8 data bits, even parity, 1 stop bit
+2. Commands must end with `Z`
+3. Check motor driver power and connections
+4. Verify step/direction pin connections (PA0/PA1 for Motor 1, PA2/PA3 for Motor 2)
+
+### System Resets Frequently
+
+1. Check watchdog is being refreshed (watchdog task running)
+2. Verify stack sizes are sufficient
+3. Check for blocking operations in tasks
+4. Look for infinite loops
+
+### Debug Session Won't Start
+
+1. Verify Cortex-Debug extension installed
+2. Verify STM32CubeCLT is installed
+3. If installed elsewhere, update paths in:
+   - `.vscode/settings.json` - `cortex-debug.armToolchainPath`, `cortex-debug.gdbPath`, `cortex-debug.stlinkPath`
+   - `.vscode/launch.json` - `serverpath`, `stm32cubeprogrammer`, `svdFile`
+4. Reload VS Code window (Ctrl+Shift+P → "Reload Window")
+5. Verify board is connected and ST-LINK driver installed
+
+### Breakpoints Not Hitting
+
+1. Verify code is actually executed
+2. Check optimization level (high optimization can skip code)
+3. Ensure executable matches source (rebuild)
+4. Try setting breakpoint earlier in code flow
+
+---
+
+## VS Code Settings
+
+The project includes pre-configured VS Code settings:
+
+| File | Purpose |
+|------|---------|
+| `.vscode/launch.json` | Debug configurations |
+| `.vscode/tasks.json` | Build tasks |
+| `.vscode/settings.json` | Toolchain paths, IntelliSense |
+
+---
 
 ## Adding New Platforms
 
-### 1. Create Platform Directory
-```bash
-mkdir src/hal/platforms/your_platform
-```
+1. Create `hal/platforms/<platform>/CMakeLists.txt`
+2. Implement `hal_<platform>.c` with HAL interface functions
+3. Update `hal/CMakeLists.txt` to include new platform
+4. Build with `-DPLATFORM=<platform>`
 
-### 2. Implement HAL Functions
-Create `hal_your_platform.c` and `hal_your_platform.h` implementing the HAL interface.
-
-### 3. Add CMake Configuration
-Create `CMakeLists.txt` in the platform directory with platform-specific settings.
-
-### 4. Update Main CMakeLists.txt
-Add the new platform to the platform selection logic.
-
-## Testing
-
-### Unit Tests
-```bash
-# Enable tests in CMake
-cmake .. -DBUILD_TESTS=ON
-cmake --build .
-ctest
-```
-
-### Integration Tests
-Run the example application and test motor control commands.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+---
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Authors
-
-- **MultiAxesControl** - *Initial work* - [GitHub](https://github.com/multiaxescontrol)
+MIT License - see LICENSE file.
 
 ## Acknowledgments
 
-- FreeRTOS community for the excellent RTOS
-- Arduino community for hardware abstraction ideas
-- STM32 and ESP32 communities for platform support
-
-## Changelog
-
-### v1.0.0 (2025-01-10)
-- Initial release
-- Modular architecture implementation
-- Arduino platform support
-- FreeRTOS integration
-- Python GUI interface
-- CMake build system
+- STM32 HAL/LL Drivers - STMicroelectronics
+- FreeRTOS Kernel - Amazon Web Services
+- CMSIS - ARM Limited

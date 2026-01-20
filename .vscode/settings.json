@@ -1,8 +1,8 @@
 {
-    "cortex-debug.armToolchainPath": "C:/ST/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin",
-    "cortex-debug.gdbPath": "C:/ST/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/arm-none-eabi-gdb.exe",
-    "cortex-debug.stlinkPath": "C:/ST/STM32CubeCLT_1.20.0/STLink-gdb-server/bin",
-    "C_Cpp.default.compilerPath": "C:/ST/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/arm-none-eabi-gcc.exe",
+    "cortex-debug.armToolchainPath": "${env:STM32CLT_PATH}/GNU-tools-for-STM32/bin",
+    "cortex-debug.gdbPath": "${env:STM32CLT_PATH}/GNU-tools-for-STM32/bin/arm-none-eabi-gdb.exe",
+    "cortex-debug.stlinkPath": "${env:STM32CLT_PATH}/STLink-gdb-server/bin",
+    "C_Cpp.default.compilerPath": "${env:STM32CLT_PATH}/GNU-tools-for-STM32/bin/arm-none-eabi-gcc.exe",
     "C_Cpp.default.includePath": [
         "${workspaceFolder}/**",
         "${workspaceFolder}/hal/third_party/cmsis_core/Include",
@@ -28,5 +28,5 @@
     "files.exclude": {
         "**/.git": true
     },
-    "git.ignoreSubmodules": true,
+    "git.ignoreSubmodules": true
 }
