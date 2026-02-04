@@ -15,6 +15,7 @@
 
 add_library(hal_stm32 STATIC
     hal_stm32.c
+    stm32g4xx_hal_timebase_tim.c
 )
 
 # -----------------------------------------------------------------------------
