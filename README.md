@@ -71,6 +71,8 @@ MultiAxesControl/
 
 5. **Python 3.7+**
 
+6. **Latest Git**
+
 6. **VS Code Extensions**:
    - **Cortex-Debug** (by marus25) - Required for debugging
    - **C/C++** (by Microsoft) - Recommended for IntelliSense
@@ -78,6 +80,9 @@ MultiAxesControl/
 ### Build
 
 ```bash
+### Initialize submodules
+git submodule update --init --recursive
+
 # Build main firmware
 python scripts/build/build_firmware.py
 
@@ -96,37 +101,7 @@ Output files are generated in `builds/build_firmware/executables/`:
 - `firmware.hex` - Intel HEX format
 
 ---
-
-## Flashing
-
-### Method 1: Drag & Drop (Easiest)
-
-1. Connect NUCLEO board via USB
-2. Board appears as a USB drive
-3. Drag `builds/build_firmware/executables/firmware.bin` to the drive
-4. Wait for LED to stop blinking (programming complete)
-5. Press black RESET button
-
-### Method 2: STM32CubeProgrammer CLI (via STM32CubeCLT)
-
-If you installed STM32CubeCLT and set `STM32CLT_PATH`, use:
-
-```bash
-# Windows (PowerShell)
-& "$env:STM32CLT_PATH/STM32CubeProgrammer/bin/STM32_Programmer_CLI.exe" `
-  -c port=SWD -w builds/build_firmware/executables/firmware.hex -v -rst
-
-### Method 3: STM32CubeProgrammer GUI
-
-1. Open STM32CubeProgrammer (installed with STM32CubeCLT or standalone)
-2. Connect board via USB
-3. Select **ST-LINK** connection, click **Connect**
-4. Click **Open file** → select `firmware.hex`
-5. Click **Download**
-
----
-
-## Debugging
+## Flashing & Debugging
 
 ### Prerequisites
 
@@ -146,8 +121,8 @@ The `.vscode` files use `${env:STM32CLT_PATH}` to locate:
 
 ### Start Debugging
 
-1. Press **F5** in VS Code
-2. Select **"Debug Firmware (ST-Link)"** or **"Debug Blinky (ST-Link)"**
+1. Press **Ctrl+Shift+D** in VS Code to open the debug extension
+2. Select **"Debug Firmware (ST-Link)"** or **"Debug Blinky (ST-Link)"** and play
 3. Debugger automatically builds, flashes, and stops at `main()`
 
 ### Debug Configurations
@@ -195,6 +170,34 @@ int _write(int file, char *ptr, int len) {
 // Now printf() outputs to SWO console
 printf("Debug: value = %d\n", my_variable);
 ```
+
+---
+## Standalone Flashing
+
+### Method 1: Drag & Drop (Easiest)
+
+1. Connect NUCLEO board via USB
+2. Board appears as a USB drive
+3. Drag `builds/build_firmware/executables/firmware.bin` to the drive
+4. Wait for LED to stop blinking (programming complete)
+5. Press black RESET button
+
+### Method 2: STM32CubeProgrammer CLI (via STM32CubeCLT)
+
+If you installed STM32CubeCLT and set `STM32CLT_PATH`, use:
+
+```bash
+# Windows (PowerShell)
+& "$env:STM32CLT_PATH/STM32CubeProgrammer/bin/STM32_Programmer_CLI.exe" `
+  -c port=SWD -w builds/build_firmware/executables/firmware.hex -v -rst
+
+### Method 3: STM32CubeProgrammer GUI
+
+1. Open STM32CubeProgrammer (installed with STM32CubeCLT or standalone)
+2. Connect board via USB
+3. Select **ST-LINK** connection, click **Connect**
+4. Click **Open file** → select `firmware.hex`
+5. Click **Download**
 
 ---
 
