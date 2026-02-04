@@ -31,10 +31,10 @@ set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG")
 # Third-Party Dependencies Paths
 # =============================================================================
 
-set(CMSIS_DEVICE_DIR ${CMAKE_SOURCE_DIR}/hal/third_party/cmsis_device_g4 CACHE PATH "CMSIS Device")
-set(CMSIS_CORE_DIR ${CMAKE_SOURCE_DIR}/hal/third_party/CMSIS_5/CMSIS/Core CACHE PATH "CMSIS Core")
-set(HAL_DRIVER_DIR ${CMAKE_SOURCE_DIR}/hal/third_party/stm32g4xx_hal_driver CACHE PATH "STM32 HAL Driver")
-set(FREERTOS_DIR ${CMAKE_SOURCE_DIR}/os/freertos/FreeRTOS-Kernel CACHE PATH "FreeRTOS Kernel")
+set(CMSIS_DEVICE_DIR ${CMAKE_SOURCE_DIR}/hal/cmsis_device_g4 CACHE PATH "CMSIS Device")
+set(CMSIS_CORE_DIR ${CMAKE_SOURCE_DIR}/hal/CMSIS_5/CMSIS/Core CACHE PATH "CMSIS Core")
+set(HAL_DRIVER_DIR ${CMAKE_SOURCE_DIR}/hal/platforms/stm32/stm32g4xx_hal_driver CACHE PATH "STM32 HAL Driver")
+set(FREERTOS_DIR ${CMAKE_SOURCE_DIR}/os/FreeRTOS-Kernel CACHE PATH "FreeRTOS Kernel")
 
 # =============================================================================
 # Platform-Specific Toolchain Configuration

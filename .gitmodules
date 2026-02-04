@@ -1,15 +1,15 @@
-[submodule "hal/third_party/cmsis_device_g4"]
-	path = hal/third_party/cmsis_device_g4
+[submodule "hal/cmsis_device_g4"]
+	path = hal/cmsis_device_g4
 	url = https://github.com/STMicroelectronics/cmsis_device_g4.git
 
-[submodule "hal/third_party/stm32g4xx_hal_driver"]
-	path = hal/third_party/stm32g4xx_hal_driver
+[submodule "hal/platforms/stm32/stm32g4xx_hal_driver"]
+	path = hal/platforms/stm32/stm32g4xx_hal_driver
 	url = https://github.com/STMicroelectronics/stm32g4xx_hal_driver.git
 
-[submodule "hal/third_party/CMSIS_5"]
-	path = hal/third_party/CMSIS_5
+[submodule "hal/CMSIS_5"]
+	path = hal/CMSIS_5
 	url = https://github.com/ARM-software/CMSIS_5.git
 
-[submodule "os/freertos/FreeRTOS-Kernel"]
-	path = os/freertos/FreeRTOS-Kernel
+[submodule "os/FreeRTOS-Kernel"]
+	path = os/FreeRTOS-Kernel
 	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
