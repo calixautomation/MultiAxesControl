@@ -8,7 +8,7 @@ _estack = ORIGIN(RAM) + LENGTH(RAM);
 
 /* Minimum heap and stack sizes */
 _Min_Heap_Size  = 0x1000;  /* 4KB */
-_Min_Stack_Size = 0x400;   /* 1KB */
+_Min_Stack_Size = 0x2000;  /* 1KB */
 
 MEMORY
 {

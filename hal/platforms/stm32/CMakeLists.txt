@@ -15,8 +15,10 @@
 
 add_library(hal_stm32 STATIC
     hal_stm32.c
-    stm32g4xx_hal_timebase_tim.c
 )
+
+# Export the path to stm32g4xx_it.c for targets to include directly
+set(STM32_IT_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/stm32g4xx_it.c CACHE INTERNAL "STM32 ISR source file")
 
 # -----------------------------------------------------------------------------
 # Include Directories
@@ -109,3 +111,11 @@ target_compile_definitions(hal_stm32 PUBLIC
 target_link_libraries(hal_stm32 PUBLIC
     hal_interface
 )
+
+# -----------------------------------------------------------------------------
+# Link FreeRTOS (for ISR integration)
+# -----------------------------------------------------------------------------
+
+if(TARGET freertos_kernel)
+    target_link_libraries(hal_stm32 PUBLIC freertos_kernel)
+endif()

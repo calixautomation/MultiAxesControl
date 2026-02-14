@@ -19,6 +19,7 @@ endif()
 
 add_executable(firmware
     src/main.c
+    ${STM32_IT_SOURCE}  # ISRs compiled directly with firmware for proper weak symbol override
 )
 
 # -----------------------------------------------------------------------------

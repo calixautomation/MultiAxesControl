@@ -8,6 +8,7 @@
 
 add_executable(blinky
     src/main.c
+    ${STM32_IT_SOURCE}  # ISRs compiled directly for proper weak symbol override
 )
 
 # -----------------------------------------------------------------------------

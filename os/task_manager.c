@@ -143,7 +143,8 @@ void task_manager_uart_rx_isr(void) {
             rx_buffer[rx_index] = '\0';
 
             // Send command to queue
-            task_manager_send_command(rx_buffer);
+            //task_manager_send_command(rx_buffer);
+            task_manager_send_response(rx_buffer);
 
             // Reset buffer
             rx_index = 0;

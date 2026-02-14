@@ -35,6 +35,8 @@ static TIM_HandleTypeDef htim3;          // Timer 3 for rotary motor
 static UART_HandleTypeDef huart1;        // UART1 for communication
 static IWDG_HandleTypeDef hiwdg;         // Independent watchdog
 
+extern UART_HandleTypeDef huart2;        // UART1 for communication
+
 /**
  * @brief Motor control state
  */
@@ -90,7 +92,7 @@ hal_status_t hal_init(void) {
 
     // Configure GPIO pins for motor control (PA0-PA3)
     GPIO_InitTypeDef GPIO_InitStruct = {0};
-    GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3;
+    GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -356,7 +358,7 @@ hal_status_t hal_uart_send_string(const char *str) {
     }
 
     uint16_t len = strlen(str);
-    HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t*)str, len, 1000);
+    HAL_StatusTypeDef status = HAL_UART_Transmit(&huart2, (uint8_t*)str, len, HAL_MAX_DELAY);
     return (status == HAL_OK) ? CUSTOM_HAL_OK : CUSTOM_HAL_TIMEOUT;
 }
 
@@ -804,89 +806,6 @@ hal_status_t hal_interrupt_register_handler(uint32_t irq_number, void (*handler)
     (void)irq_number;
     (void)handler;
     return CUSTOM_HAL_OK;
-}
-
-/* ============================================================================
- * INTERRUPT SERVICE ROUTINES (ISRs)
- * ============================================================================ */
-
-// Forward declarations for application callbacks
-extern void motor_control_step_notification(motor_id_t motor_id);
-extern void task_manager_uart_rx_isr(void);
-
-/**
- * @brief TIM2 interrupt handler (Linear motor step generation)
- * @note Called at configured frequency to generate step pulses
- */
-void TIM2_IRQHandler(void) {
-    if (__HAL_TIM_GET_FLAG(&htim2, TIM_FLAG_UPDATE) != RESET) {
-        if (__HAL_TIM_GET_IT_SOURCE(&htim2, TIM_IT_UPDATE) != RESET) {
-            __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_UPDATE);
-
-            // Generate step pulse for linear motor
-            hal_motor_step(MOTOR_LINEAR);
-
-            // Notify application layer
-            motor_control_step_notification(MOTOR_LINEAR);
-
-            // Call registered callback if any
-            if (g_timer_callbacks[0]) {
-                g_timer_callbacks[0]();
-            }
-        }
-    }
-}
-
-/**
- * @brief TIM3 interrupt handler (Rotary motor step generation)
- * @note Called at configured frequency to generate step pulses
- */
-void TIM3_IRQHandler(void) {
-    if (__HAL_TIM_GET_FLAG(&htim3, TIM_FLAG_UPDATE) != RESET) {
-        if (__HAL_TIM_GET_IT_SOURCE(&htim3, TIM_IT_UPDATE) != RESET) {
-            __HAL_TIM_CLEAR_IT(&htim3, TIM_IT_UPDATE);
-
-            // Generate step pulse for rotary motor
-            hal_motor_step(MOTOR_ROTARY);
-
-            // Notify application layer
-            motor_control_step_notification(MOTOR_ROTARY);
-
-            // Call registered callback if any
-            if (g_timer_callbacks[1]) {
-                g_timer_callbacks[1]();
-            }
-        }
-    }
-}
-
-/**
- * @brief USART1 interrupt handler (UART communication)
- * @note Handles both RX and TX interrupts
- */
-void USART1_IRQHandler(void) {
-    // RX interrupt - data received
-    if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE) != RESET) {
-        if (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_RXNE) != RESET) {
-            // Call task manager ISR (parses commands)
-            task_manager_uart_rx_isr();
-
-            // Also call registered callback if any
-            if (g_uart_rx_callback) {
-                uint8_t data = (uint8_t)(huart1.Instance->RDR & 0xFF);
-                g_uart_rx_callback(data);
-            }
-        }
-    }
-
-    // TX interrupt - transmission complete
-    if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_TXE) != RESET) {
-        if (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_TXE) != RESET) {
-            if (g_uart_tx_callback) {
-                g_uart_tx_callback();
-            }
-        }
-    }
 }
 
 /* ============================================================================
