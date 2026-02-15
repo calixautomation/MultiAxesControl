@@ -274,10 +274,12 @@ hal_status_t hal_uart_init(const uart_config_t *config) {
     huart2.Init.OverSampling = UART_OVERSAMPLING_16;
     HAL_UART_Init(&huart2);
 
-    // Enable UART interrupt for RX
-    __HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE);
-    HAL_NVIC_SetPriority(USART1_IRQn, 6, 0);
-    HAL_NVIC_EnableIRQ(USART1_IRQn);
+    // Enable NVIC for UART interrupts (used by HAL_UART_Receive_IT)
+    HAL_NVIC_SetPriority(USART2_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(USART2_IRQn);
+
+    // Start interrupt-driven reception (1 byte at a time)
+    HAL_UART_Receive_IT(&huart2, &g_uart_rx_byte, 1);
 
     return CUSTOM_HAL_OK;
 }
@@ -325,15 +327,38 @@ hal_status_t hal_uart_receive_byte(uint8_t *data) {
         return CUSTOM_HAL_INVALID_PARAM;
     }
 
-    // Check if data is available in RX buffer
-    if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE)) {
-        *data = (uint8_t)(huart1.Instance->RDR & 0xFF);
-        return CUSTOM_HAL_OK;
-    }
-
-    return CUSTOM_HAL_BUSY;  // No data available
+    // Return the last received byte (from interrupt)
+    *data = g_uart_rx_byte;
+    return CUSTOM_HAL_OK;
 }
 
+/**
+ * @brief HAL UART RX Complete Callback
+ * Called by HAL_UART_IRQHandler when reception is complete
+ */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+    if (huart->Instance == USART2) {
+        // Process the received byte via task manager
+        task_manager_uart_rx_isr();
+
+
+        // Re-arm reception for next byte
+        HAL_UART_Receive_IT(&huart2, &g_uart_rx_byte, 1);
+    }
+}
+
+/**
+ * @brief HAL UART Error Callback
+ * Called when UART errors occur (overrun, framing, etc.)
+ */
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+    if (huart->Instance == USART2) {
+        // Clear errors and restart reception
+        __HAL_UART_CLEAR_FLAG(&huart2, UART_CLEAR_OREF | UART_CLEAR_FEF |
+                                        UART_CLEAR_NEF | UART_CLEAR_PEF);
+        HAL_UART_Receive_IT(&huart2, &g_uart_rx_byte, 1);
+    }
+}
 
 /* ============================================================================
  * GPIO FUNCTIONS (General Purpose I/O)

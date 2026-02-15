@@ -7,6 +7,7 @@
  */
 
 #include "stm32g4xx_hal.h"
+#include "stm32g4xx_hal_uart.h"
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -87,6 +88,7 @@ void DebugMon_Handler(void) {
 
 /**
  * @brief USART2 interrupt handler
+ * Uses HAL's interrupt handler - callbacks handle data processing
  */
 void USART2_IRQHandler(void) {
     // Guard: huart2 might not be initialized yet
@@ -94,7 +96,8 @@ void USART2_IRQHandler(void) {
         return;
     }
 
-    task_manager_uart_rx_isr();
+    // HAL handles all UART interrupts and calls HAL_UART_RxCpltCallback when done
+    HAL_UART_IRQHandler(&huart2);
 }
 
 /**

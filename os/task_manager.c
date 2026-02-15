@@ -17,6 +17,10 @@
 #define UART_RX_BUFFER_SIZE     16
 #define COMMAND_QUEUE_SIZE      10
 
+#if 0
+#define ENABLE_LOOPBACK_TEST   // Enable this to test UART reception without processing commands
+#endif
+
 // FreeRTOS handles
 static QueueHandle_t g_command_queue = NULL;
 static TaskHandle_t g_uart_task_handle = NULL;
@@ -142,9 +146,14 @@ void task_manager_uart_rx_isr(void) {
         if (ch == 'Z' || rx_index >= sizeof(rx_buffer) - 1) {
             rx_buffer[rx_index] = '\0';
 
-            // Send command to queue
-            //task_manager_send_command(rx_buffer);
+            #ifdef ENABLE_LOOPBACK_TEST
             task_manager_send_response(rx_buffer);
+            #else
+            // Send command to queue
+            task_manager_send_command(rx_buffer);
+            #endif
+            
+            
 
             // Reset buffer
             rx_index = 0;

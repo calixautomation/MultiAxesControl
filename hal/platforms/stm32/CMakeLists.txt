@@ -61,6 +61,7 @@ set(STM32_HAL_SOURCES
 
     # Communication
     ${HAL_DRIVER_DIR}/Src/stm32g4xx_hal_uart.c
+    ${HAL_DRIVER_DIR}/Src/stm32g4xx_hal_uart_ex.c
 
     # Watchdog
     ${HAL_DRIVER_DIR}/Src/stm32g4xx_hal_iwdg.c
