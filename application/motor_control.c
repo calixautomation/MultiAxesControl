@@ -47,12 +47,6 @@ app_status_t motor_control_init(void) {
     // Set default configuration
     g_system_config = default_config;
 
-    // Initialize HAL layer
-    hal_status_t hal_status = hal_init();
-    if (hal_status != CUSTOM_HAL_OK) {
-        return APP_ERROR;
-    }
-
     g_system_initialized = true;
     return APP_OK;
 }

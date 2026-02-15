@@ -45,24 +45,24 @@ static motor_control_t g_motors[MOTOR_MAX];
 /**
  * @brief Registered callbacks
  */
-static uart_rx_callback_t g_uart_rx_callback = NULL;
-static uart_tx_callback_t g_uart_tx_callback = NULL;
 static timer_callback_t g_timer_callbacks[2] = {NULL, NULL};
 
 /**
  * @brief Initialization flags
  */
-static bool g_hal_initialized = false;
 static bool g_watchdog_initialized = false;
+
+/**
+ * @brief UART receive buffer for HAL_UART_Receive_IT (single byte mode)
+ */
+static uint8_t g_uart_rx_byte;
+
+// External callback from task_manager
+extern void task_manager_uart_rx_isr(void) __attribute__((weak));
 
 /* ============================================================================
  * PRIVATE FUNCTION PROTOTYPES
  * ============================================================================ */
-
-static void HAL_MspInit_TIM2(void);
-static void HAL_MspInit_TIM3(void);
-static void HAL_MspInit_UART1(void);
-static HAL_StatusTypeDef Convert_HAL_Status(HAL_StatusTypeDef hal_status);
 
 /* ============================================================================
  * GENERAL HAL FUNCTIONS
@@ -78,30 +78,28 @@ static HAL_StatusTypeDef Convert_HAL_Status(HAL_StatusTypeDef hal_status);
  *       - Does NOT start timers or UART (use specific init functions)
  */
 hal_status_t hal_init(void) {
-    if (g_hal_initialized) {
-        return CUSTOM_HAL_OK;  // Already initialized
-    }
+    gpio_config_t gpioConfig = {0U};
+    uart_config_t uartConfig = {0U};
 
     // Initialize motor control structures
     memset(g_motors, 0, sizeof(g_motors));
     g_motors[MOTOR_LINEAR].id = MOTOR_LINEAR;
     g_motors[MOTOR_ROTARY].id = MOTOR_ROTARY;
 
-    // Enable GPIO clock
-    __HAL_RCC_GPIOA_CLK_ENABLE();
+    gpioConfig.pin_number = 0U;
+    gpioConfig.is_output = true;
+    gpioConfig.pullup_enable = false;
 
-    // Configure GPIO pins for motor control (PA0-PA3)
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
-    GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    uartConfig.baud_rate = 9600U;
+    uartConfig.data_bits = 8U;
+    uartConfig.stop_bits = 1U;
+    uartConfig.parity = 2U; // even
+    uartConfig.interrupt_enable = true;
 
-    // Initialize all motor control pins to LOW
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3, GPIO_PIN_RESET);
+    // Initialize peripherals
+    hal_gpio_init(&gpioConfig);
+    hal_uart_init(&uartConfig);
 
-    g_hal_initialized = true;
     return CUSTOM_HAL_OK;
 }
 
@@ -112,9 +110,6 @@ hal_status_t hal_init(void) {
  * @note Stops all timers, closes UART, and resets GPIO
  */
 hal_status_t hal_deinit(void) {
-    if (!g_hal_initialized) {
-        return CUSTOM_HAL_OK;  // Nothing to deinitialize
-    }
 
     // Stop all timers
     HAL_TIM_Base_Stop_IT(&htim2);
@@ -126,34 +121,14 @@ hal_status_t hal_deinit(void) {
     HAL_UART_DeInit(&huart1);
 
     // Reset GPIO pins
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
+    HAL_GPIO_DeInit(GPIOA,  GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_5);
 
-    g_hal_initialized = false;
     return CUSTOM_HAL_OK;
 }
 
 /* ============================================================================
  * TIMER FUNCTIONS (Motor Step Generation)
  * ============================================================================ */
-
-/**
- * @brief Initialize a timer for motor step generation
- * @param config Timer configuration (frequency, prescaler, etc.)
- * @return CUSTOM_HAL_OK on success, CUSTOM_HAL_ERROR on failure
- *
- * @note Timer frequency calculation:
- *       Timer Update Freq = APB1_Timer_CLK / ((Prescaler + 1) * (Period + 1))
- *       For precise step generation, configure using hal_timer_set_frequency()
- */
-hal_status_t hal_timer_init(const timer_config_t *config) {
-    if (!config) {
-        return CUSTOM_HAL_INVALID_PARAM;
-    }
-
-    // Timer initialization is done per-motor via hal_motor_init()
-    // This function validates configuration parameters
-    return CUSTOM_HAL_OK;
-}
 
 /**
  * @brief Start a timer (begins generating motor steps)
@@ -266,21 +241,6 @@ hal_status_t hal_timer_set_frequency(uint8_t timer_id, uint32_t frequency) {
     return CUSTOM_HAL_OK;
 }
 
-/**
- * @brief Register a callback for timer update events
- * @param timer_id Timer identifier
- * @param callback Function to call on timer update
- * @return CUSTOM_HAL_OK on success
- */
-hal_status_t hal_timer_register_callback(uint8_t timer_id, timer_callback_t callback) {
-    if (timer_id >= 2) {
-        return CUSTOM_HAL_INVALID_PARAM;
-    }
-
-    g_timer_callbacks[timer_id] = callback;
-    return CUSTOM_HAL_OK;
-}
-
 /* ============================================================================
  * UART FUNCTIONS (Communication)
  * ============================================================================ */
@@ -303,26 +263,16 @@ hal_status_t hal_uart_init(const uart_config_t *config) {
         return CUSTOM_HAL_INVALID_PARAM;
     }
 
-    // Enable USART1 clock
-    __HAL_RCC_USART1_CLK_ENABLE();
-
     // Configure UART
-    huart1.Instance = USART1;
-    huart1.Init.BaudRate = 115200;
-    huart1.Init.WordLength = UART_WORDLENGTH_8B;
-    huart1.Init.StopBits = UART_STOPBITS_1;
-    huart1.Init.Parity = UART_PARITY_NONE;
-    huart1.Init.Mode = UART_MODE_TX_RX;
-    huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-    huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-    huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-    huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-
-    HAL_StatusTypeDef status = HAL_UART_Init(&huart1);
-    if (status != HAL_OK) {
-        return CUSTOM_HAL_ERROR;
-    }
+    huart2.Instance = USART2;
+    huart2.Init.BaudRate = 9600;
+    huart2.Init.WordLength = UART_WORDLENGTH_9B; // 8 data bits + 1 parity bit
+    huart2.Init.StopBits = UART_STOPBITS_1;
+    huart2.Init.Parity = UART_PARITY_EVEN;
+    huart2.Init.Mode = UART_MODE_TX_RX;
+    huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+    huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+    HAL_UART_Init(&huart2);
 
     // Enable UART interrupt for RX
     __HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE);
@@ -384,25 +334,6 @@ hal_status_t hal_uart_receive_byte(uint8_t *data) {
     return CUSTOM_HAL_BUSY;  // No data available
 }
 
-/**
- * @brief Register callback for UART RX interrupt
- * @param callback Function to call when byte received
- * @return CUSTOM_HAL_OK
- */
-hal_status_t hal_uart_register_rx_callback(uart_rx_callback_t callback) {
-    g_uart_rx_callback = callback;
-    return CUSTOM_HAL_OK;
-}
-
-/**
- * @brief Register callback for UART TX complete interrupt
- * @param callback Function to call when transmission complete
- * @return CUSTOM_HAL_OK
- */
-hal_status_t hal_uart_register_tx_callback(uart_tx_callback_t callback) {
-    g_uart_tx_callback = callback;
-    return CUSTOM_HAL_OK;
-}
 
 /* ============================================================================
  * GPIO FUNCTIONS (General Purpose I/O)
@@ -417,11 +348,27 @@ hal_status_t hal_uart_register_tx_callback(uart_tx_callback_t callback) {
  *       This function is for additional GPIO configuration if needed
  */
 hal_status_t hal_gpio_init(const gpio_config_t *config) {
+
+    hal_status_t status = CUSTOM_HAL_ERROR;
+    
     if (!config) {
         return CUSTOM_HAL_INVALID_PARAM;
     }
 
-    // GPIO initialization done in hal_init() for motor pins
+    // Enable GPIOA clock for LED (PA5)
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+
+    // Configure GPIO pins for motor control (PA0-PA1) & onboard LED (PA5)
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_5;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    // Initialize all motor control pins to LOW
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0 | GPIO_PIN_1, GPIO_PIN_RESET);
+
     return CUSTOM_HAL_OK;
 }
 
@@ -496,26 +443,6 @@ hal_status_t hal_gpio_toggle(uint8_t pin) {
  * ============================================================================ */
 
 /**
- * @brief Initialize motor control
- * @param config Motor configuration
- * @param motor_id Motor identifier (MOTOR_LINEAR or MOTOR_ROTARY)
- * @return CUSTOM_HAL_OK on success
- */
-hal_status_t hal_motor_init(const motor_config_t *config, motor_id_t motor_id) {
-    if (!config || motor_id >= MOTOR_MAX) {
-        return CUSTOM_HAL_INVALID_PARAM;
-    }
-
-    g_motors[motor_id].id = motor_id;
-    g_motors[motor_id].mode = MOTOR_MODE_STOP;
-    g_motors[motor_id].is_running = false;
-    g_motors[motor_id].step_count = 0;
-    g_motors[motor_id].target_steps = 0;
-
-    return CUSTOM_HAL_OK;
-}
-
-/**
  * @brief Set motor direction
  * @param motor_id Motor identifier
  * @param direction MOTOR_DIR_FORWARD or MOTOR_DIR_REVERSE
@@ -561,60 +488,6 @@ hal_status_t hal_motor_stop(motor_id_t motor_id) {
 
     g_motors[motor_id].is_running = false;
     return hal_timer_stop(motor_id);
-}
-
-/**
- * @brief Generate one step pulse (toggle STEP pin)
- * @param motor_id Motor identifier
- * @return CUSTOM_HAL_OK on success
- *
- * @note Called from timer ISR to generate step pulses
- */
-hal_status_t hal_motor_step(motor_id_t motor_id) {
-    if (motor_id >= MOTOR_MAX) {
-        return CUSTOM_HAL_INVALID_PARAM;
-    }
-
-    // Toggle step pin: PA0 for linear, PA2 for rotary
-    uint8_t step_pin = (motor_id == MOTOR_LINEAR) ? 0 : 2;
-    hal_gpio_toggle(step_pin);
-
-    // Update step count for incremental mode
-    if (g_motors[motor_id].mode == MOTOR_MODE_INCREMENTAL) {
-        g_motors[motor_id].step_count++;
-    }
-
-    return CUSTOM_HAL_OK;
-}
-
-/**
- * @brief Set motor operation mode
- * @param motor_id Motor identifier
- * @param mode Operation mode (STOP, JOG, INCREMENTAL, CYCLIC)
- * @return CUSTOM_HAL_OK on success
- */
-hal_status_t hal_motor_set_mode(motor_id_t motor_id, motor_mode_t mode) {
-    if (motor_id >= MOTOR_MAX) {
-        return CUSTOM_HAL_INVALID_PARAM;
-    }
-
-    g_motors[motor_id].mode = mode;
-    return CUSTOM_HAL_OK;
-}
-
-/**
- * @brief Get motor status
- * @param motor_id Motor identifier
- * @param status Pointer to store motor status
- * @return CUSTOM_HAL_OK on success
- */
-hal_status_t hal_motor_get_status(motor_id_t motor_id, motor_control_t *status) {
-    if (motor_id >= MOTOR_MAX || !status) {
-        return CUSTOM_HAL_INVALID_PARAM;
-    }
-
-    *status = g_motors[motor_id];
-    return CUSTOM_HAL_OK;
 }
 
 /* ============================================================================
@@ -788,23 +661,6 @@ hal_status_t hal_interrupt_enable(uint32_t irq_number) {
  */
 hal_status_t hal_interrupt_disable(uint32_t irq_number) {
     HAL_NVIC_DisableIRQ((IRQn_Type)irq_number);
-    return CUSTOM_HAL_OK;
-}
-
-/**
- * @brief Register interrupt handler (placeholder)
- * @param irq_number IRQ number
- * @param handler Function pointer to handler
- * @return CUSTOM_HAL_OK
- *
- * @note STM32 HAL uses predefined ISR names in startup file
- *       Dynamic registration not supported - use HAL callbacks instead
- */
-hal_status_t hal_interrupt_register_handler(uint32_t irq_number, void (*handler)(void)) {
-    // STM32 HAL uses fixed ISR names defined in startup file
-    // Use HAL_TIM_PeriodElapsedCallback, HAL_UART_RxCpltCallback, etc.
-    (void)irq_number;
-    (void)handler;
     return CUSTOM_HAL_OK;
 }
 

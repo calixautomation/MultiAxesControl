@@ -62,37 +62,7 @@ void SystemClock_Config(void) {
  * Configure GPIO pins for LED
  */
 void GPIO_Init(void) {
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-    // Enable GPIOA clock for LED (PA5)
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-
-    // Configure LED pin (PA5) as output
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-
-    GPIO_InitStruct.Pin = GPIO_PIN_5;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-}
-
-/**
- * @brief UART2 Initialization
- * Basic UART setup for communication (detailed config in HAL layer)
- */
-void UART_Init(void) {
-
-    // Configure UART
-    huart2.Instance = USART2;
-    huart2.Init.BaudRate = 9600;
-    huart2.Init.WordLength = UART_WORDLENGTH_9B; // 8 data bits + 1 parity bit
-    huart2.Init.StopBits = UART_STOPBITS_1;
-    huart2.Init.Parity = UART_PARITY_EVEN;
-    huart2.Init.Mode = UART_MODE_TX_RX;
-    huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-    HAL_UART_Init(&huart2);
+    
 }
 
 /**
@@ -162,36 +132,28 @@ int main(void) {
     // Configure system clock to 170MHz
     SystemClock_Config();
 
-    // Initialize peripherals
-    GPIO_Init();
-    UART_Init();
-
     // Send startup message
     task_manager_send_response("System is preparing...");
     task_manager_send_response("Is this working fine..");
 
-    // Initialize motor control subsystem
-    if (motor_control_init() != APP_OK) {
+    // Initialize HAL layer
+    hal_status_t hal_status = hal_init();
+    if (hal_status != CUSTOM_HAL_OK) {
         while(1); // Halt on error
     }
-    #if 1
+
     // Initialize task manager and create all FreeRTOS tasks
     if (task_manager_init() != TASK_OK) {
         while(1); // Halt on error
     }
 
-    // Clear any pending flags, then enable RX interrupt
-    __HAL_UART_CLEAR_FLAG(&huart2, UART_CLEAR_OREF | UART_CLEAR_FEF | UART_CLEAR_NEF | UART_CLEAR_PEF);
-    while (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_RXNE)) {
-        (void)huart2.Instance->RDR;  // Flush RX buffer
+    // Initialize motor control subsystem
+    if (motor_control_init() != APP_OK) {
+        while(1); // Halt on error
     }
-    // NOW enable UART RX interrupt (queue exists, safe to use ISR)
-    __HAL_UART_ENABLE_IT(&huart2, UART_IT_RXNE);
-    HAL_NVIC_SetPriority(USART2_IRQn, 5, 0);
-    HAL_NVIC_EnableIRQ(USART2_IRQn);
+    
     // Initialize watchdog (after all init is done)
     //IWDG_Init();
-    #endif
 
     // Start FreeRTOS scheduler
     

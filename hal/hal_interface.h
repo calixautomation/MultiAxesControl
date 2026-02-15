@@ -88,11 +88,9 @@ hal_status_t hal_deinit(void);
 /**
  * @brief Timer HAL functions
  */
-hal_status_t hal_timer_init(const timer_config_t *config);
 hal_status_t hal_timer_start(uint8_t timer_id);
 hal_status_t hal_timer_stop(uint8_t timer_id);
 hal_status_t hal_timer_set_frequency(uint8_t timer_id, uint32_t frequency);
-hal_status_t hal_timer_register_callback(uint8_t timer_id, timer_callback_t callback);
 
 /**
  * @brief UART HAL functions
@@ -101,8 +99,6 @@ hal_status_t hal_uart_init(const uart_config_t *config);
 hal_status_t hal_uart_send_byte(uint8_t data);
 hal_status_t hal_uart_send_string(const char *str);
 hal_status_t hal_uart_receive_byte(uint8_t *data);
-hal_status_t hal_uart_register_rx_callback(uart_rx_callback_t callback);
-hal_status_t hal_uart_register_tx_callback(uart_tx_callback_t callback);
 
 /**
  * @brief GPIO HAL functions
@@ -115,13 +111,9 @@ hal_status_t hal_gpio_toggle(uint8_t pin);
 /**
  * @brief Motor HAL functions
  */
-hal_status_t hal_motor_init(const motor_config_t *config, motor_id_t motor_id);
 hal_status_t hal_motor_set_direction(motor_id_t motor_id, motor_direction_t direction);
 hal_status_t hal_motor_start(motor_id_t motor_id);
 hal_status_t hal_motor_stop(motor_id_t motor_id);
-hal_status_t hal_motor_step(motor_id_t motor_id);
-hal_status_t hal_motor_set_mode(motor_id_t motor_id, motor_mode_t mode);
-hal_status_t hal_motor_get_status(motor_id_t motor_id, motor_control_t *status);
 
 /**
  * @brief System HAL functions
@@ -137,7 +129,6 @@ hal_status_t hal_delay_us(uint32_t delay);
  */
 hal_status_t hal_interrupt_enable(uint32_t irq_number);
 hal_status_t hal_interrupt_disable(uint32_t irq_number);
-hal_status_t hal_interrupt_register_handler(uint32_t irq_number, void (*handler)(void));
 
 #ifdef __cplusplus
 }
